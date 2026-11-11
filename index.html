@@ -414,6 +414,8 @@ button{cursor:pointer}
 .t-pane{flex:1;overflow:auto;padding:16px 18px 28px;display:flex;flex-direction:column;gap:14px}
 .t-pane h3{margin:4px 0 0;font-size:20px;display:flex;align-items:center;gap:10px}
 .t-pane h3 .link{margin-left:auto;font-size:16px}
+.h3-acts{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.h3-acts .btn{background:#d9f7e7}
 .field{display:flex;flex-direction:column;gap:4px;font-weight:800;font-size:16px}
 .input,.t-pane textarea,.t-pane select{width:100%;border:3px solid var(--ink);border-radius:14px;padding:8px 12px;background:#fff;font-weight:600;font-size:18px}
 .t-pane textarea{resize:vertical;min-height:120px;line-height:1.4}
@@ -862,7 +864,8 @@ details.box[open]>summary{border-bottom:2px dashed #ddd5bd;margin-bottom:10px}
       <p><button class="btn small" type="button" id="studentsPasteBtn">Xem trước</button></p>
     </details>
     <div class="preview" id="studentsPreview" hidden></div>
-    <h3><span>Danh sách hiện tại (<span id="studentsN">0</span> bạn)</span> <button class="link danger" type="button" id="clearStudents">Xoá hết</button></h3>
+    <h3><span>Danh sách hiện tại (<span id="studentsN">0</span> bạn)</span>
+      <span class="h3-acts"><button class="btn small" type="button" id="uncallAll" hidden title="Cho tất cả các bạn đã được gọi về lại máy">↺ Hoàn lại tất cả (<span id="calledN">0</span>)</button><button class="link danger" type="button" id="clearStudents">Xoá hết</button></span></h3>
     <ul class="rows" id="studentRows"></ul>
   </section>
 
@@ -2136,9 +2139,9 @@ function celebrate(){
 }
 function resetRound(withToast=true){
   const snap=S.students.map(s=>[s.id,s.calledAt]);
-  S.students.forEach(s=>s.calledAt=0);lastId=null;save();if(!teacher.open)stage().sync();renderPanels();
+  S.students.forEach(s=>s.calledAt=0);lastId=null;studentsChanged();
   say(stageMode==='machine'?'Ván mới! Các bạn bóng về máy rồi nè!':'Ván mới! Cả lớp lại sẵn sàng rồi!');
-  if(withToast)toast('Cả lớp đã về máy.',()=>{snap.forEach(([id,c])=>{const s=byId(id);if(s)s.calledAt=c});save();if(!teacher.open)stage().sync();renderPanels()});
+  if(withToast)toast('Cả lớp đã về máy.',()=>{snap.forEach(([id,c])=>{const s=byId(id);if(s)s.calledAt=c});studentsChanged()});
 }
 
 /* ---------- Bảng bên ---------- */
@@ -2489,6 +2492,7 @@ function studentsChanged(rerender=true){save();if(rerender)renderStudentRows();e
 function snapStudents(){const snap=JSON.stringify(S.students),cls=S.className;return()=>{S.students=JSON.parse(snap);S.className=cls;$('#className').value=cls;studentsChanged();toast('Đã hoàn tác.')}}
 function renderStudentRows(){
   const ul=$('#studentRows');$('#studentsN').textContent=S.students.length;$('#tabStudentsN').textContent=S.students.length;
+  const nCalled=S.students.filter(s=>s.calledAt).length;$('#calledN').textContent=nCalled;$('#uncallAll').hidden=!nCalled;
   if(!S.students.length){ul.replaceChildren(emptyLi('Danh sách đang trống. Thêm tên hoặc chọn file ở trên nhé.'));return}
   ul.replaceChildren(...S.students.map((s,i)=>{
     const li=document.createElement('li');li.className='srow'+(s.absent?' is-absent':'');li.dataset.id=s.id;
@@ -2694,7 +2698,8 @@ function renderVoiceUI(){
 }
 $('#voiceSel').addEventListener('change',e=>{S.settings.voiceName=e.target.value;tts.pick(e.target.value);save()});
 $('#voiceTest').onclick=()=>tts.say('Xin chào cả lớp! Mời bạn '+(S.students[0]?.name||'Nguyễn Văn An')+'!');
-$('#resetRound').onclick=()=>{resetRound();renderStudentRows()};
+$('#resetRound').onclick=()=>resetRound();
+$('#uncallAll').onclick=()=>resetRound();
 $('#resetStars').onclick=()=>{const snap=S.students.map(s=>[s.id,s.stars]);S.students.forEach(s=>s.stars=0);save();renderStudentRows();renderPanels();toast('Đã xoá hết sao.',()=>{snap.forEach(([id,n])=>{const s=byId(id);if(s)s.stars=n});save();renderStudentRows();renderPanels()})};
 
 /* ================= Gắn sự kiện ================= */
